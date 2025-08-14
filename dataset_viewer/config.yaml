@@ -1,0 +1,8 @@
+# --- dataset_viewer/config.yaml ---
+# This file centralizes all configurations for the tool.
+# You can easily change paths and names here without touching the code.
+
+dataset_name: denta_dataset
+image_dir: /home/abhinand/ws/clearml-ws/dataset_source/images
+annotation_dir: /home/abhinand/ws/clearml-ws/dataset_source/annotations
+log_file: dataset_viewer.log
