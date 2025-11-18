@@ -30,6 +30,8 @@ class GenericDatasetViewer:
         self.dataset_name = self.config.get("dataset_name")
         self.image_dir = self.config.get("image_dir")
         self.annotation_dir = self.config.get("annotation_dir")
+        self.annotation_format = self.config.get("annotation_format")
+        self.coco_annotation_file = self.config.get("coco_annotation_file")
 
         if not self.dataset_name or not self.image_dir or not self.annotation_dir:
             self.logger.error("Configuration file is missing required fields.")
@@ -66,14 +68,25 @@ class GenericDatasetViewer:
         """Loads images into a FiftyOne dataset."""
         self.logger.info("Loading images into FiftyOne dataset...")
         try:
-            dataset = fo.Dataset.from_dir(
-                dataset_dir=self.image_dir,
-                dataset_type=fot.ImageDirectory,
-                name=self.dataset_name,
-                persistent=True, # Persist the dataset to avoid re-loading from scratch
-            )
-            self.logger.info(f"Successfully loaded dataset with {len(dataset)} samples.")
-            return dataset
+            if self.annotation_format == "VOC":
+                dataset = fo.Dataset.from_dir(
+                    dataset_dir=self.image_dir,
+                    dataset_type=fot.ImageDirectory,
+                    name=self.dataset_name,
+                    persistent=True, # Persist the dataset to avoid re-loading from scratch
+                )
+                self.logger.info(f"Successfully loaded dataset with {len(dataset)} samples.")
+                return dataset
+            elif self.annotation_format == "COCO":
+                dataset = fo.Dataset.from_dir(
+                    dataset_type=fo.types.COCODetectionDataset,
+                    data_path=self.image_dir,
+                    labels_path=self.coco_annotation_file,
+                    name=self.dataset_name,
+                    persistent=True,
+                )  
+                self.logger.info(f"Successfully loaded dataset with {len(dataset)} samples.")
+                return dataset 
         except Exception as e:
             self.logger.error(f"Failed to load dataset from {self.image_dir}: {e}")
             return None
@@ -165,8 +178,14 @@ class GenericDatasetViewer:
         """
         dataset = self._load_dataset()
         if dataset:
-            self._process_annotations(dataset)
-            self.logger.info("Launching FiftyOne app...")
-            session = fo.launch_app(dataset)
-            session.wait()
-            self.logger.info("FiftyOne app session closed.")
+            if self.annotation_format == "VOC":
+                self._process_annotations(dataset)
+                self.logger.info("Launching FiftyOne app...")
+                session = fo.launch_app(dataset)
+                session.wait()
+                self.logger.info("FiftyOne app session closed.")
+            elif self.annotation_format == "COCO":
+                self.logger.info("Launching FiftyOne app...")
+                session = fo.launch_app(dataset)
+                session.wait()
+                self.logger.info("FiftyOne app session closed.")
